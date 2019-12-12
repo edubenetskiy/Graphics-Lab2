@@ -6,6 +6,7 @@
 #include <stack>
 #include <queue>
 #include "SOIL/SOIL.h"
+#include "obj_loader.h"
 
 GLuint texture_wall;
 GLuint texture_wood;
@@ -16,12 +17,15 @@ int keyboard_action = 5;
 
 float pyramid_rotation_angle;        // Angle For The Triangle
 float cube_rotation_angle;    // Angle For The Quad
+Mesh teapot;
 
 void drawWall();
 
 void drawCube();
 
 void drawPyramid();
+
+void drawMesh(Mesh &mesh);
 
 void placeAndRotateCamera();
 
@@ -41,6 +45,7 @@ void init() {
 
     load_texture("textures/wall.jpg", &texture_wall);
     load_texture("textures/wood.png", &texture_wood);
+    teapot = obj_loader::load_obj("meshes/airplane.obj");
 
     glEnable(GL_CULL_FACE);
 }
@@ -83,7 +88,7 @@ void reshape(int w, int h) {
     placeAndRotateCamera();
 }
 
-const double CAMERA_DISTANCE = 7.;
+const double CAMERA_DISTANCE = 13.;
 double cameraAngle = 0.0;
 GLdouble camY = 0.;
 
@@ -168,6 +173,7 @@ void mainLoop() {
     drawWall();
     drawPyramid();
     drawCube();
+    drawMesh(teapot);
 
     pyramid_rotation_angle += 0.5f;
     cube_rotation_angle -= 0.15f;
@@ -188,6 +194,80 @@ void mainLoop() {
     glDisable(GL_LIGHT3);
 
     glutSwapBuffers();
+}
+
+void drawMesh(Mesh &mesh) {
+    glPushMatrix();
+    glTranslated(0., 0., -5.);
+    glRotated(-30, 1., 1., 1.);
+    double meshScale = 15.; // во сколько раз уменьшить фигуру
+    bool debug = false;
+    glColor3d(0.2, 1.0, 0.3);
+
+    for (Face const &face: teapot.faces) {
+        switch (face.vertices.size()) {
+            case 3:
+                glBegin(GL_TRIANGLES);
+                for (FaceVertex vertex : face.vertices) {
+
+                    if (debug) {
+                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
+                                  << vertex.position.z
+                                  << std::endl;
+                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
+                                  << std::endl;
+                    }
+
+                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
+                    glVertex3d(vertex.position.x / meshScale,
+                               vertex.position.y / meshScale,
+                               vertex.position.z / meshScale);
+                }
+                glEnd();
+                break;
+
+            case 4:
+                glBegin(GL_QUADS);
+                for (FaceVertex vertex : face.vertices) {
+
+                    if (debug) {
+                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
+                                  << vertex.position.z
+                                  << std::endl;
+                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
+                                  << std::endl;
+                    }
+
+                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
+                    glVertex3d(vertex.position.x / meshScale,
+                               vertex.position.y / meshScale,
+                               vertex.position.z / meshScale);
+                }
+                glEnd();
+                break;
+
+            default:
+                glBegin(GL_POLYGON);
+                for (FaceVertex vertex : face.vertices) {
+
+                    if (debug) {
+                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
+                                  << vertex.position.z
+                                  << std::endl;
+                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
+                                  << std::endl;
+                    }
+
+                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
+                    glVertex3d(vertex.position.x / meshScale,
+                               vertex.position.y / meshScale,
+                               vertex.position.z / meshScale);
+                }
+                glEnd();
+                break;
+        }
+    }
+    glPopMatrix();
 }
 
 GLfloat COLOR_RED[3] = {1., 0., 0.};
