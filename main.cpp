@@ -204,40 +204,14 @@ void drawMesh(Mesh &mesh) {
     glColor3d(0.2, 1.0, 0.3);
 
     for (Face const &face: teapot.faces) {
-        switch (face.vertices.size()) {
-            case 3:
-                glBegin(GL_TRIANGLES);
-                for (FaceVertex vertex : face.vertices) {
-                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
-                    glVertex3d(vertex.position.x / meshScale,
-                               vertex.position.y / meshScale,
-                               vertex.position.z / meshScale);
-                }
-                glEnd();
-                break;
-
-            case 4:
-                glBegin(GL_QUADS);
-                for (FaceVertex vertex : face.vertices) {
-                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
-                    glVertex3d(vertex.position.x / meshScale,
-                               vertex.position.y / meshScale,
-                               vertex.position.z / meshScale);
-                }
-                glEnd();
-                break;
-
-            default:
-                glBegin(GL_POLYGON);
-                for (FaceVertex vertex : face.vertices) {
-                    glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
-                    glVertex3d(vertex.position.x / meshScale,
-                               vertex.position.y / meshScale,
-                               vertex.position.z / meshScale);
-                }
-                glEnd();
-                break;
+        glBegin(GL_POLYGON);
+        for (FaceVertex vertex : face.vertices) {
+            glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
+            glVertex3d(vertex.position.x / meshScale,
+                       vertex.position.y / meshScale,
+                       vertex.position.z / meshScale);
         }
+        glEnd();
     }
     glPopMatrix();
 }
