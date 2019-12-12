@@ -201,7 +201,6 @@ void drawMesh(Mesh &mesh) {
     glTranslated(0., 0., -5.);
     glRotated(-30, 1., 1., 1.);
     double meshScale = 15.; // во сколько раз уменьшить фигуру
-    bool debug = false;
     glColor3d(0.2, 1.0, 0.3);
 
     for (Face const &face: teapot.faces) {
@@ -209,15 +208,6 @@ void drawMesh(Mesh &mesh) {
             case 3:
                 glBegin(GL_TRIANGLES);
                 for (FaceVertex vertex : face.vertices) {
-
-                    if (debug) {
-                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
-                                  << vertex.position.z
-                                  << std::endl;
-                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
-                                  << std::endl;
-                    }
-
                     glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
                     glVertex3d(vertex.position.x / meshScale,
                                vertex.position.y / meshScale,
@@ -229,15 +219,6 @@ void drawMesh(Mesh &mesh) {
             case 4:
                 glBegin(GL_QUADS);
                 for (FaceVertex vertex : face.vertices) {
-
-                    if (debug) {
-                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
-                                  << vertex.position.z
-                                  << std::endl;
-                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
-                                  << std::endl;
-                    }
-
                     glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
                     glVertex3d(vertex.position.x / meshScale,
                                vertex.position.y / meshScale,
@@ -249,15 +230,6 @@ void drawMesh(Mesh &mesh) {
             default:
                 glBegin(GL_POLYGON);
                 for (FaceVertex vertex : face.vertices) {
-
-                    if (debug) {
-                        std::cout << "Vertex: " << vertex.position.x << " " << vertex.position.y << " "
-                                  << vertex.position.z
-                                  << std::endl;
-                        std::cout << "Normal: " << vertex.normal.x << " " << vertex.normal.y << " " << vertex.normal.z
-                                  << std::endl;
-                    }
-
                     glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
                     glVertex3d(vertex.position.x / meshScale,
                                vertex.position.y / meshScale,
