@@ -13,11 +13,20 @@ GLuint texture_wood;
 
 std::queue<char> keys = std::queue<char>();
 
-int keyboard_action = 5;
 
 float pyramid_rotation_angle;        // Angle For The Triangle
 float cube_rotation_angle;    // Angle For The Quad
 Mesh teapot;
+
+enum class LightType {
+    DIRECTED = 1,
+    POINT = 2,
+    PROJECTOR = 3,
+    NO_LIGHT_SOURCES = 4,
+    SUPPORT_DISABLED = 5,
+};
+
+LightType lightState = LightType::SUPPORT_DISABLED;
 
 void drawWall();
 
@@ -32,11 +41,11 @@ void placeAndRotateCamera();
 void load_texture(const char *imageFilename, GLuint *textureId);
 
 void init() {
-    glShadeModel(GL_SMOOTH);                            // Enable Smooth Shading
+    glShadeModel(GL_SMOOTH);
     glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST); // включить тест глубины, чтобы объекты могли перекрывать друг друга
-    glClearColor(0.0f, 0.0f, 0.0f, 0.5f);                // Black Background
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
     glClearDepth(1.0f);    // Depth Buffer Setup
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
@@ -45,7 +54,7 @@ void init() {
 
     load_texture("textures/wall.jpg", &texture_wall);
     load_texture("textures/wood.png", &texture_wood);
-    teapot = obj_loader::load_obj("meshes/airplane.obj");
+    teapot = obj_loader::load_obj("meshes/heart.obj");
 
     glEnable(GL_CULL_FACE);
 }
@@ -88,16 +97,17 @@ void reshape(int w, int h) {
     placeAndRotateCamera();
 }
 
-const double CAMERA_DISTANCE = 13.;
-double cameraAngle = 0.0;
+double cameraRadius = 10.;
+double cameraAngleY = 0.0;
+double cameraAngleX = 0.0;
 GLdouble camY = 0.;
 
 /**
  * Устанавливает положение и угол обзора камеры.
  */
 void placeAndRotateCamera() {
-    GLdouble camX = sin(cameraAngle) * CAMERA_DISTANCE;
-    GLdouble camZ = cos(cameraAngle) * CAMERA_DISTANCE;
+    GLdouble camX = sin(cameraAngleY) * cameraRadius;
+    GLdouble camZ = cos(cameraAngleY) * cameraRadius;
     gluLookAt(camX, camY, camZ,
               0, 0, 0,
               0.0f, 1.0f, 0.0f);
@@ -106,13 +116,39 @@ void placeAndRotateCamera() {
 void mainLoop() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    if (!keys.empty()) {
+        char key = keys.back();
+        switch (key) {
+            case GLUT_KEY_LEFT:
+                cameraAngleY -= 0.1;
+                break;
+            case GLUT_KEY_RIGHT:
+                cameraAngleY += 0.1;
+                break;
+            case '+':
+                cameraRadius -= 1.;
+                break;
+            case '-':
+                cameraRadius += 1.;
+                break;
+            default:
+                if (key == '~') lightState = LightType::SUPPORT_DISABLED;
+                else if (key == '0') lightState = LightType::NO_LIGHT_SOURCES;
+                else if (key == '1') lightState = LightType::DIRECTED;
+                else if (key == '2') lightState = LightType::POINT;
+                else if (key == '3') lightState = LightType::PROJECTOR;
+                else std::cerr << "Unhandled key press: '" << keys.back() << "'!" << std::endl;
+        }
+        keys.pop();
+    }
+
     GLfloat material_diffuse[] = {1.0, 1.0, 1.0, 1.0};
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_diffuse);
 
     glLoadIdentity();
     placeAndRotateCamera();
 
-    if (keyboard_action == 1) {
+    if (lightState == LightType::DIRECTED) {
         // направленный источник света
         glEnable(GL_LIGHTING);
         glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
@@ -124,7 +160,7 @@ void mainLoop() {
         glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse_color);
         glLightfv(GL_LIGHT0, GL_POSITION, light0_direction);
     }
-    if (keyboard_action == 2) {
+    if (lightState == LightType::POINT) {
         // точечный источник света
         // убывание интенсивности с расстоянием
         // отключено (по умолчанию)
@@ -141,11 +177,10 @@ void mainLoop() {
         glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.);
         glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.);
     }
-    if (keyboard_action == 3) {
+    if (lightState == LightType::PROJECTOR) {
         glEnable(GL_LIGHTING);
         glEnable(GL_NORMALIZE);
         glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-        // автоматическое приведение нормалей к единичной длине
         GLfloat light3_diffuse[] = {0., 0., 1.};
         GLfloat light3_position[] = {+0.0, 0.0, +10.0, 1.0};
         GLfloat light3_spot_direction[] = {0.0, 0.0, -1.0};
@@ -155,17 +190,16 @@ void mainLoop() {
         glLightf(GL_LIGHT3, GL_SPOT_CUTOFF, 5);
         glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, light3_spot_direction);
     }
-    if (keyboard_action == 4) {
-        glEnable(GL_LIGHTING);
-        glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-        // автоматическое приведение нормалей к единичной длине
-        glEnable(GL_NORMALIZE);
+    if (lightState == LightType::NO_LIGHT_SOURCES) {
         // Все источники света отключены
+        glEnable(GL_LIGHTING);
+        glEnable(GL_NORMALIZE);
+        glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
         glDisable(GL_LIGHT0);
         glDisable(GL_LIGHT2);
         glDisable(GL_LIGHT3);
     }
-    if (keyboard_action == 5) {
+    if (lightState == LightType::SUPPORT_DISABLED) {
         // Поддержка освещения отключена
         glDisable(GL_LIGHTING);
     }
@@ -178,16 +212,6 @@ void mainLoop() {
     pyramid_rotation_angle += 0.5f;
     cube_rotation_angle -= 0.15f;
 
-    if (!keys.empty() && keys.back() == GLUT_KEY_LEFT) {
-        cameraAngle -= 0.1;
-        keys.pop();
-    } else if (!keys.empty() && keys.back() == GLUT_KEY_RIGHT) {
-        cameraAngle += 0.1;
-        keys.pop();
-    } else if (!keys.empty()) {
-        std::cerr << "Unhandled key press: '" << keys.back() << "'!" << std::endl;
-        keys.pop();
-    }
 
     glDisable(GL_LIGHT0);
     glDisable(GL_LIGHT2);
@@ -196,16 +220,22 @@ void mainLoop() {
     glutSwapBuffers();
 }
 
+GLfloat COLOR_RED[3] = {.67, .18, .15};
+GLfloat COLOR_GREEN[3] = {.0, .59, .54};
+GLfloat COLOR_BLUE[3] = {.02, .67, .96};
+
 void drawMesh(Mesh &mesh) {
     glPushMatrix();
-    glTranslated(0., 0., -5.);
-    glRotated(-30, 1., 1., 1.);
-    double meshScale = 15.; // во сколько раз уменьшить фигуру
-    glColor3d(0.2, 1.0, 0.3);
+    glTranslated(0., -2.5, -5.);
+    glRotated(-5, 1., 1., 1.);
+    glRotated(-90, 1., 0., 0.);
+    double meshScale = 5.;
+    glColor3fv(COLOR_RED);
 
     for (Face const &face: teapot.faces) {
         glBegin(GL_POLYGON);
         for (FaceVertex vertex : face.vertices) {
+            glTexCoord3d(vertex.texture.x, vertex.texture.y, vertex.texture.z);
             glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
             glVertex3d(vertex.position.x / meshScale,
                        vertex.position.y / meshScale,
@@ -216,26 +246,19 @@ void drawMesh(Mesh &mesh) {
     glPopMatrix();
 }
 
-GLfloat COLOR_RED[3] = {1., 0., 0.};
-GLfloat COLOR_GREEN[3] = {0., 1., 0.};
-GLfloat COLOR_BLUE[3] = {0., 0., 1.};
-
 /**
  * Рисует пирамидку.
  */
 void drawPyramid() {
     glPushMatrix();
 
-    glTranslatef(-2.f, 0.0f, 0.0f);
-    /* if (keyboard_action == 6) {
-         glDisable(GL_LIGHTING);
-          glRotatef(pyramid_rotation_angle,0.0f,1.0f,0.0f);} */
+    glTranslatef(+2.f, 0.0f, 0.0f);
     glRotatef(pyramid_rotation_angle, 0.f, 1.0f, .0f);
-    // if (keyboard_action == 7) glRotatef(pyramid_rotation_angle, 0.0, 0.0, 0.0);
     glBegin(GL_TRIANGLES);
 
     // Front face
     glColor3fv(COLOR_RED);
+    glNormal3f(0.0f, 0.0f, 1.0f);
     glVertex3f(0.0f, 1.0f, 0.0f);            // Top Of Triangle (Front)
     glColor3fv(COLOR_GREEN);
     glVertex3f(-1.0f, -1.0f, 1.0f);            // Left Of Triangle (Front)
@@ -244,6 +267,7 @@ void drawPyramid() {
 
     // Right face
     glColor3fv(COLOR_RED);
+    glNormal3f(1.0f, 0.0f, 0.0f);
     glVertex3f(0.0f, 1.0f, 0.0f);            // Top Of Triangle (Right)
     glColor3fv(COLOR_BLUE);
     glVertex3f(1.0f, -1.0f, 1.0f);            // Left Of Triangle (Right)
@@ -252,6 +276,7 @@ void drawPyramid() {
 
     // Back face
     glColor3fv(COLOR_RED);
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glVertex3f(0.0f, 1.0f, 0.0f);            // Top Of Triangle (Back)
     glColor3fv(COLOR_GREEN);
     glVertex3f(1.0f, -1.0f, -1.0f);            // Left Of Triangle (Back)
@@ -260,6 +285,7 @@ void drawPyramid() {
 
     // Left face
     glColor3fv(COLOR_RED);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     glVertex3f(0.0f, 1.0f, 0.0f);            // Top Of Triangle (Left)
     glColor3fv(COLOR_BLUE);
     glVertex3f(-1.0f, -1.0f, -1.0f);            // Left Of Triangle (Left)
@@ -267,6 +293,23 @@ void drawPyramid() {
     glVertex3f(-1.0f, -1.0f, 1.0f);            // Right Of Triangle (Left)
 
     glEnd();                                            // Finished Drawing The Triangle
+
+    // Bottom
+    glBegin(GL_POLYGON);
+
+    glColor3fv(COLOR_BLUE);
+    glVertex3f(-1.f, -1.f, -1.f);
+
+    glColor3fv(COLOR_GREEN);
+    glVertex3f(+1.f, -1.f, -1.f);
+
+    glColor3fv(COLOR_BLUE);
+    glVertex3f(+1.f, -1.f, +1.f);
+
+    glColor3fv(COLOR_GREEN);
+    glVertex3f(-1.f, -1.f, +1.f);
+
+    glEnd();
 
     glPopMatrix();
 }
@@ -276,14 +319,10 @@ void drawPyramid() {
  */
 void drawCube() {
     glPushMatrix();
-    glTranslatef(2.f, 0.f, 0.f);                // Move Right 1.5 Units And Into The Screen 6.0
-/* if (keyboard_action == 6) {
-    glDisable(GL_LIGHTING);
-     glRotatef(cube_rotation_angle,1.0f,1.0f,1.0f);} */
+    glTranslatef(-2.f, 0.f, 0.f);                // Move Right 1.5 Units And Into The Screen 6.0
     glRotatef(cube_rotation_angle, 1.0f, 1.0f, 1.0f);
-    //if (keyboard_action == 7) glRotatef(pyramid_rotation_angle, 0.0, 0.0, 0.0);
-    glColor3f(1., 1., 1.);                            // Set The Color To Blue One Time Only
 
+    glColor3f(1., 1., 1.);
     glBindTexture(GL_TEXTURE_2D, texture_wood);
     glBegin(GL_QUADS);
 
@@ -367,7 +406,7 @@ void drawWall() {
 
     glTranslatef(0.0f, 0.0f, -3.0f);
 
-    glColor3f(1., 1., 1.); // TODO: Зачем ставить белый цвет перед отрисовкой текстуры?
+    glColor3f(1., 1., 1.);
     glBindTexture(GL_TEXTURE_2D, texture_wall);
 
     int numFragments = 100;
@@ -428,19 +467,7 @@ void drawWall() {
  */
 void keyboardHandler(unsigned char key, int mouse_x, int mouse_y) {
     std::cout << "Key '" << key << "' was pressed" << std::endl;
-
     keys.push(key);
-
-    //lightning
-    if (key == '1') keyboard_action = 1;
-    if (key == '2') keyboard_action = 2;
-    if (key == '3') keyboard_action = 3;
-    if (key == '4') keyboard_action = 4;
-    if (key == '5') keyboard_action = 5;
-
-    //rotating
-    //   if (key == 'r') keyboard_action = 6;
-    //  if (key == 's') keyboard_action = 7;
     glutPostRedisplay();
 }
 
@@ -464,7 +491,7 @@ void specialKeyHandler(int key, int x, int y) {
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA); // Display Mode
-    glutInitWindowSize(800, 500);
+    glutInitWindowSize(1280, 800);
     glutCreateWindow("Laboratory work 2");
     init();
 

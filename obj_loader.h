@@ -31,6 +31,7 @@ class FaceVertex {
 public:
     Point3 position;
     Vector3 normal = DEFAULT_NORMAL_VECTOR;
+    Point3 texture;
 };
 
 class Face {
