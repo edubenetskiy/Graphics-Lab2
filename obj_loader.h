@@ -7,28 +7,24 @@
 
 #include <vector>
 
-class Point3 {
-public:
+struct Point3 {
     double x = 0.;
     double y = 0.;
     double z = 0.;
-
-    Point3() = default;
 };
 
-class Vector3 {
-public:
+struct Vector3 {
     double x = 0.;
     double y = 0.;
     double z = 0.;
-
-    Vector3() = default;
 };
+
+static const Vector3 DEFAULT_NORMAL_VECTOR = {0., 0., 1.};
 
 class FaceVertex {
 public:
     Point3 position;
-    Vector3 normal;
+    Vector3 normal = DEFAULT_NORMAL_VECTOR;
 };
 
 class Face {

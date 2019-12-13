@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <regex>
@@ -10,13 +9,50 @@ using namespace std;
 
 namespace obj_loader {
 
+    struct FaceVertexDefinition {
+        size_t vertexOrdinal;
+        size_t textureVertexOrdinal;
+        size_t normalVectorOrdinal;
+    };
+
+    static const std::regex FACE_VERTEX_DEFINITION_PATTERN("^([0-9]+)(/([0-9]+)?(/([0-9]+)?)?)?$");
+
+    FaceVertexDefinition parseVertexDefinition(string &definition) {
+        FaceVertexDefinition result{
+                .vertexOrdinal = 0,
+                .textureVertexOrdinal = 0,
+                .normalVectorOrdinal = 0,
+        };
+
+        std::smatch matchResults;
+        std::regex_match(definition, matchResults, FACE_VERTEX_DEFINITION_PATTERN);
+
+        try {
+            result.vertexOrdinal = stoi(matchResults[1].str());
+        } catch (invalid_argument &error) {
+            throw std::runtime_error(std::string("Invalid face vertex index: '") + error.what() + "'");
+        }
+
+        try {
+            result.textureVertexOrdinal = stoi(matchResults[3].str());
+        } catch (invalid_argument &ignored) {
+            result.textureVertexOrdinal = 0;
+        }
+
+        try {
+            result.normalVectorOrdinal = stoi(matchResults[5].str());
+        } catch (invalid_argument &ignored) {
+            result.normalVectorOrdinal = 0;
+        }
+
+        return result;
+    }
+
     Mesh load_obj(const char *path) {
         cout << "Loading OBJ file..." << endl;
 
         std::vector<Point3> vertices;
         std::vector<Vector3> normals;
-
-        std::regex regex("^([0-9]+)(/([0-9]+)?(/([0-9]+)?)?)?$");
 
         ifstream file;
         file.open(path);
@@ -26,9 +62,9 @@ namespace obj_loader {
 
         Mesh mesh = Mesh();
 
-        string lineText;
-        while (getline(file, lineText)) {
-            istringstream line(lineText);
+        string lineOfText;
+        while (getline(file, lineOfText)) {
+            istringstream line(lineOfText);
             std::string op;
             line >> op;
 
@@ -42,7 +78,7 @@ namespace obj_loader {
                 vertices.push_back(point);
 
             } else if (op == "vn") {
-                // Vertex's normal
+                // Normal vector for a vertex
                 Vector3 normal;
                 line >> normal.x >> normal.y >> normal.z;
                 normals.push_back(normal);
@@ -52,46 +88,15 @@ namespace obj_loader {
                 Face face;
                 string vertexDefinition;
                 while (line >> vertexDefinition) {
-                    unsigned int vertexIndex = 0, textureIndex = 0, normalIndex = 0;
-                    std::smatch matchResults;
-                    std::regex_match(vertexDefinition, matchResults, regex);
+                    FaceVertex faceVertex;
+                    FaceVertexDefinition faceVertexDefinition = parseVertexDefinition(vertexDefinition);
+                    faceVertex.position = vertices[faceVertexDefinition.vertexOrdinal - 1];
 
-                    FaceVertex faceVertex = {};
-
-                    try {
-                        vertexIndex = stoi(matchResults[1].str());
-                        if (vertexIndex > 0) {
-                            faceVertex.position = vertices[vertexIndex - 1];
-                        }
-                    } catch (invalid_argument &error) {
-                        throw std::runtime_error(
-                                std::string("Failed to parse OBJ file: invalid face vertex definition: ") +
-                                error.what());
-                    }
-
-                    try {
-                        textureIndex = stoi(matchResults[3].str());
-                    } catch (invalid_argument &ignored) {
-                        textureIndex = vertexIndex;
-                    }
-
-                    try {
-                        normalIndex = stoi(matchResults[5].str());
-                        if (normalIndex > 0) {
-                            faceVertex.normal = normals[normalIndex - 1];
-                        }
-                    } catch (invalid_argument &ignored) {
-                        if (normals.size() >= vertices.size()) {
-                            std::cerr << "Falling back to normalIndex = vertexIndex" << std::endl;
-                            faceVertex.normal = normals[vertexIndex - 1];
-                        } else {
-                            std::cerr << "Falling back to default normal vector" << std::endl;
-                            Vector3 defaultNormal = Vector3();
-                            defaultNormal.x = 0;
-                            defaultNormal.y = 0;
-                            defaultNormal.z = 1;
-                            faceVertex.normal = defaultNormal;
-                        }
+                    if (faceVertexDefinition.normalVectorOrdinal != 0) {
+                        faceVertex.normal = normals[faceVertexDefinition.normalVectorOrdinal - 1];
+                    } else {
+                        std::cerr << "Falling back to default normal vector" << std::endl;
+                        faceVertex.normal = DEFAULT_NORMAL_VECTOR;
                     }
 
                     face.vertices.push_back(faceVertex);
