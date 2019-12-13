@@ -232,6 +232,8 @@ void drawMesh(Mesh &mesh) {
     double meshScale = 5.;
     glColor3fv(COLOR_RED);
 
+    glBindTexture(GL_TEXTURE_2D, texture_wood);
+
     for (Face const &face: teapot.faces) {
         glBegin(GL_POLYGON);
         for (FaceVertex vertex : face.vertices) {
@@ -243,6 +245,8 @@ void drawMesh(Mesh &mesh) {
         }
         glEnd();
     }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
     glPopMatrix();
 }
 

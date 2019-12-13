@@ -52,6 +52,7 @@ namespace obj_loader {
         cout << "Loading OBJ file..." << endl;
 
         std::vector<Point3> vertices;
+        std::vector<Point3> textureVertices;
         std::vector<Vector3> normals;
 
         ifstream file;
@@ -83,6 +84,11 @@ namespace obj_loader {
                 line >> normal.x >> normal.y >> normal.z;
                 normals.push_back(normal);
 
+            } else if (op == "vt") {
+                Point3 point;
+                line >> point.x >> point.y >> point.z;
+                textureVertices.push_back(point);
+
             } else if (op == "f") {
                 // Face
                 Face face;
@@ -92,6 +98,10 @@ namespace obj_loader {
                     FaceVertex faceVertex;
                     FaceVertexDefinition faceVertexDefinition = parseVertexDefinition(vertexDefinition);
                     faceVertex.position = vertices[faceVertexDefinition.vertexOrdinal - 1];
+
+                    if (faceVertexDefinition.textureVertexOrdinal != 0) {
+                        faceVertex.texture = textureVertices[faceVertexDefinition.textureVertexOrdinal - 1];
+                    }
 
                     if (faceVertexDefinition.normalVectorOrdinal != 0) {
                         faceVertex.normal = normals[faceVertexDefinition.normalVectorOrdinal - 1];

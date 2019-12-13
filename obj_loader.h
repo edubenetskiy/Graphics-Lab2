@@ -25,13 +25,14 @@ public:
     Vector3 operator-(Point3 that);
 };
 
+static const Point3 DEFAULT_TEXTURE_VERTEX = {0., 0., 0.};
 static const Vector3 DEFAULT_NORMAL_VECTOR = {0., 0., 1.};
 
 class FaceVertex {
 public:
     Point3 position;
     Vector3 normal = DEFAULT_NORMAL_VECTOR;
-    Point3 texture;
+    Point3 texture = DEFAULT_TEXTURE_VERTEX;
 };
 
 class Face {
