@@ -7,16 +7,22 @@
 
 #include <vector>
 
-struct Point3 {
-    double x = 0.;
-    double y = 0.;
-    double z = 0.;
-};
-
 struct Vector3 {
     double x = 0.;
     double y = 0.;
     double z = 0.;
+
+public:
+    Vector3 cross_multiply(Vector3 that);
+};
+
+struct Point3 {
+    double x = 0.;
+    double y = 0.;
+    double z = 0.;
+
+public:
+    Vector3 operator-(Point3 that);
 };
 
 static const Vector3 DEFAULT_NORMAL_VECTOR = {0., 0., 1.};
@@ -29,7 +35,7 @@ public:
 
 class Face {
 public:
-    std::vector<FaceVertex> vertices = std::vector<FaceVertex>();
+    std::vector<FaceVertex> vertices;
 };
 
 class Mesh {

@@ -87,6 +87,7 @@ namespace obj_loader {
                 // Face
                 Face face;
                 string vertexDefinition;
+                bool shouldCalculateNormals = false;
                 while (line >> vertexDefinition) {
                     FaceVertex faceVertex;
                     FaceVertexDefinition faceVertexDefinition = parseVertexDefinition(vertexDefinition);
@@ -95,11 +96,21 @@ namespace obj_loader {
                     if (faceVertexDefinition.normalVectorOrdinal != 0) {
                         faceVertex.normal = normals[faceVertexDefinition.normalVectorOrdinal - 1];
                     } else {
-                        std::cerr << "Falling back to default normal vector" << std::endl;
-                        faceVertex.normal = DEFAULT_NORMAL_VECTOR;
+                        shouldCalculateNormals = true;
                     }
 
                     face.vertices.push_back(faceVertex);
+                }
+
+                if (shouldCalculateNormals) {
+                    cerr << "Some normals not present for a face, calculating normal vectors" << endl;
+                    Vector3 v12 = face.vertices[1].position - face.vertices[0].position;
+                    Vector3 v13 = face.vertices[2].position - face.vertices[0].position;
+                    const Vector3 &calculatedNormal = v12.cross_multiply(v13);
+
+                    for (auto &vertex : face.vertices) {
+                        vertex.normal = calculatedNormal;
+                    }
                 }
 
                 mesh.faces.push_back(face);
@@ -113,4 +124,20 @@ namespace obj_loader {
 
         return mesh;
     }
+}
+
+Vector3 Vector3::cross_multiply(Vector3 that) {
+    return Vector3{
+            .x = this->y * that.z - this->z * that.y,
+            .y = that.x * this->z - that.z * this->x,
+            .z = this->x * that.y - this->y * that.x,
+    };
+}
+
+Vector3 Point3::operator-(Point3 that) {
+    return Vector3{
+            .x = this->x - that.x,
+            .y = this->y - that.y,
+            .z = this->z - that.z,
+    };
 }
