@@ -106,7 +106,7 @@ void reshape(int w, int h) {
     placeAndRotateCamera();
 }
 
-double cameraRadius = 10.;
+double cameraRadius = 15.;
 double cameraAngleY = 0.0;
 double cameraAngleX = 0.0;
 GLdouble camY = 0.;
@@ -140,6 +140,11 @@ void mainLoop() {
             case '-':
                 cameraRadius += 1.;
                 break;
+            case 'r':
+                cameraAngleX = 0.;
+                cameraAngleY = 0.;
+                cameraRadius = 15.;
+                break;
             default:
                 if (key == '~') lightState = LightType::SUPPORT_DISABLED;
                 else if (key == '0') lightState = LightType::NO_LIGHT_SOURCES;
@@ -159,8 +164,8 @@ void mainLoop() {
     glGetDoublev(GL_MODELVIEW_MATRIX, modelViewMatrix);
     gluInvertMatrix(modelViewMatrix, invertedModelViewMatrix);
 //        printMatrix4x4(modelViewMatrix);
-    GLdouble light3_position[] = {+0.0, 0.0, -15.0, 1.0};
-    multiplyMatVec(invertedModelViewMatrix, light3_position);
+    GLdouble lightPosition[] = {+0.0, 0.0, +15.0, 1.0};
+    multiplyMatVec(invertedModelViewMatrix, lightPosition);
 
     glLoadIdentity();
     placeAndRotateCamera();
@@ -232,7 +237,7 @@ void mainLoop() {
         glRotated(-90, 1., 0., 0.);
 
         drawMesh(teapot);
-        castShadow(teapot, light3_position);
+        castShadow(teapot, lightPosition);
     }
     glPopMatrix();
 

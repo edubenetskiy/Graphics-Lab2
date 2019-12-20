@@ -122,7 +122,7 @@ void castShadow(Mesh &mesh, double const *lightPosition) {
     glColorMask(1, 1, 1, 1);
 
     // draw a shadowing rectangle covering the entire screen
-    glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
+    glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glStencilFunc(GL_NOTEQUAL, 0, 0xffffffff);
