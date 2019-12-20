@@ -110,6 +110,7 @@ namespace obj_loader {
                     }
 
                     face.vertices.push_back(faceVertex);
+                    face.neigh.push_back(0);
                 }
 
                 if (shouldCalculateNormals) {
@@ -118,7 +119,7 @@ namespace obj_loader {
                     Vector3 v13 = face.vertices[2].position - face.vertices[0].position;
                     const Vector3 &calculatedNormal = v12.cross_multiply(v13);
 
-                    for (auto &vertex : face.vertices) {
+                    for (FaceVertex &vertex : face.vertices) {
                         vertex.normal = calculatedNormal;
                     }
                 }
@@ -150,4 +151,43 @@ Vector3 Point3::operator-(Point3 that) {
             .y = this->y - that.y,
             .z = this->z - that.z,
     };
+}
+
+bool Point3::operator==(const Point3 &rhs) const {
+    return x == rhs.x &&
+           y == rhs.y &&
+           z == rhs.z;
+}
+
+bool Point3::operator!=(const Point3 &rhs) const {
+    return !(rhs == *this);
+}
+
+PlaneEquation Face::calculatePlaneEquation() {
+    PlaneEquation equation = {};
+    Point3 v[4];
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        v[i + 1].x = this->vertices[i].position.x;
+        v[i + 1].y = this->vertices[i].position.y;
+        v[i + 1].z = this->vertices[i].position.z;
+    }
+
+    equation.a = v[1].y * (v[2].z - v[3].z) + v[2].y * (v[3].z - v[1].z) + v[3].y * (v[1].z - v[2].z);
+    equation.b = v[1].z * (v[2].x - v[3].x) + v[2].z * (v[3].x - v[1].x) + v[3].z * (v[1].x - v[2].x);
+    equation.c = v[1].x * (v[2].y - v[3].y) + v[2].x * (v[3].y - v[1].y) + v[3].x * (v[1].y - v[2].y);
+
+    equation.d = -(v[1].x * (v[2].y * v[3].z - v[3].y * v[2].z) +
+                   v[2].x * (v[3].y * v[1].z - v[1].y * v[3].z) +
+                   v[3].x * (v[1].y * v[2].z - v[2].y * v[1].z));
+
+    return equation;
+}
+
+Segment3::Segment3(const Point3 &pointA, const Point3 &pointB) : pointA(pointA), pointB(pointB) {}
+
+bool Segment3::isEquivalentTo(Segment3 &that) {
+    return (this->pointA == that.pointA && this->pointB == that.pointB) ||
+           (this->pointA == that.pointB && this->pointB == that.pointA);
 }

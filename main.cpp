@@ -7,6 +7,7 @@
 #include <queue>
 #include "SOIL/SOIL.h"
 #include "obj_loader.h"
+#include "ShadowCast.h"
 
 GLuint texture_wall;
 GLuint texture_wood;
@@ -40,13 +41,19 @@ void placeAndRotateCamera();
 
 void load_texture(const char *imageFilename, GLuint *textureId);
 
+void printMatrix4x4(const double *modelViewMatrix);
+
 void init() {
     glShadeModel(GL_SMOOTH);
     glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);                                // The Type Of Depth Testing To Do
     glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
     glClearDepth(1.0f);    // Depth Buffer Setup
+    glClearStencil(0);                                    // Stencil Buffer Setup
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    // Really Nice Perspective Calculations
+
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
     glEnable(GL_TEXTURE_2D);
@@ -55,7 +62,9 @@ void init() {
     load_texture("textures/wall.jpg", &texture_wall);
     load_texture("textures/wood.png", &texture_wood);
     teapot = obj_loader::load_obj("meshes/heart.obj");
+    calculateFaceAdjacency(teapot);
 
+    glCullFace(GL_BACK);
     glEnable(GL_CULL_FACE);
 }
 
@@ -114,7 +123,7 @@ void placeAndRotateCamera() {
 }
 
 void mainLoop() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     if (!keys.empty()) {
         char key = keys.back();
@@ -145,6 +154,14 @@ void mainLoop() {
     GLfloat material_diffuse[] = {1.0, 1.0, 1.0, 1.0};
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_diffuse);
 
+    double modelViewMatrix[16];
+    double invertedModelViewMatrix[16];
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelViewMatrix);
+    gluInvertMatrix(modelViewMatrix, invertedModelViewMatrix);
+//        printMatrix4x4(modelViewMatrix);
+    GLdouble light3_position[] = {+0.0, 0.0, -15.0, 1.0};
+    multiplyMatVec(invertedModelViewMatrix, light3_position);
+
     glLoadIdentity();
     placeAndRotateCamera();
 
@@ -169,7 +186,7 @@ void mainLoop() {
         // автоматическое приведение нормалей к единичной длине
         glEnable(GL_NORMALIZE);
         GLfloat light2_diffuse[] = {1.0, 0.0, 0.0};
-        GLfloat light2_position[] = {0.0, 3.0, 5.0, 1.0};
+        GLfloat light2_position[] = {0.0, 3.0, 125.0, 1.0};
         glEnable(GL_LIGHT2);
         glLightfv(GL_LIGHT2, GL_DIFFUSE, light2_diffuse);
         glLightfv(GL_LIGHT2, GL_POSITION, light2_position);
@@ -182,7 +199,7 @@ void mainLoop() {
         glEnable(GL_NORMALIZE);
         glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
         GLfloat light3_diffuse[] = {0., 0., 1.};
-        GLfloat light3_position[] = {+0.0, 0.0, +10.0, 1.0};
+        GLfloat light3_position[] = {+0.0, 0.0, -10.0, 1.0};
         GLfloat light3_spot_direction[] = {0.0, 0.0, -1.0};
         glEnable(GL_LIGHT3);
         glLightfv(GL_LIGHT3, GL_DIFFUSE, light3_diffuse);
@@ -207,7 +224,17 @@ void mainLoop() {
     drawWall();
     drawPyramid();
     drawCube();
-    drawMesh(teapot);
+
+    glPushMatrix();
+    {
+        glTranslated(0., -2.5, +5.);
+        glRotated(-5, 1., 1., 1.);
+        glRotated(-90, 1., 0., 0.);
+
+        drawMesh(teapot);
+        castShadow(teapot, light3_position);
+    }
+    glPopMatrix();
 
     pyramid_rotation_angle += 0.5f;
     cube_rotation_angle -= 0.15f;
@@ -220,15 +247,21 @@ void mainLoop() {
     glutSwapBuffers();
 }
 
+void printMatrix4x4(const double *modelViewMatrix) {
+    std::cout << std::endl << "----------------------------------" << std::endl;
+    for (int i = 0; i < 16; ++i) {
+        if (i % 4 == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << modelViewMatrix[i] << " ";
+    }
+}
+
 GLfloat COLOR_RED[3] = {.67, .18, .15};
 GLfloat COLOR_GREEN[3] = {.0, .59, .54};
 GLfloat COLOR_BLUE[3] = {.02, .67, .96};
 
 void drawMesh(Mesh &mesh) {
-    glPushMatrix();
-    glTranslated(0., -2.5, -5.);
-    glRotated(-5, 1., 1., 1.);
-    glRotated(-90, 1., 0., 0.);
     double meshScale = 5.;
     glColor3fv(COLOR_RED);
 
@@ -247,7 +280,6 @@ void drawMesh(Mesh &mesh) {
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    glPopMatrix();
 }
 
 /**
@@ -494,7 +526,7 @@ void specialKeyHandler(int key, int x, int y) {
 
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA); // Display Mode
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_STENCIL); // Display Mode
     glutInitWindowSize(1280, 800);
     glutCreateWindow("Laboratory work 2");
     init();
