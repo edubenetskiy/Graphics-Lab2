@@ -7,6 +7,7 @@
 #include <queue>
 #include "SOIL/SOIL.h"
 #include "obj_loader.h"
+#include "CMatrix.h"
 
 GLuint texture_wall;
 GLuint texture_wood;
@@ -206,7 +207,18 @@ void mainLoop() {
 
     drawWall();
     drawPyramid();
-    drawCube();
+
+    glPushMatrix();
+    {
+//        glTranslatef(-2.f, 0.f, 0.f);                // Move Right 1.5 Units And Into The Screen 6.0
+//        glRotatef(cube_rotation_angle, 1.0f, 1.0f, 1.0f);
+        glColor3f(1., 1., 1.);
+        glBindTexture(GL_TEXTURE_2D, texture_wood);
+        drawCube();
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glPopMatrix();
+
     drawMesh(teapot);
 
     pyramid_rotation_angle += 0.5f;
@@ -322,12 +334,6 @@ void drawPyramid() {
  * Рисует куб.
  */
 void drawCube() {
-    glPushMatrix();
-    glTranslatef(-2.f, 0.f, 0.f);                // Move Right 1.5 Units And Into The Screen 6.0
-    glRotatef(cube_rotation_angle, 1.0f, 1.0f, 1.0f);
-
-    glColor3f(1., 1., 1.);
-    glBindTexture(GL_TEXTURE_2D, texture_wood);
     glBegin(GL_QUADS);
 
     // Front Face
@@ -397,9 +403,6 @@ void drawCube() {
     glVertex3f(-1.0f, 1.0f, -1.0f);
 
     glEnd();            // Done Drawing The Quad
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glPopMatrix();
 }
 
 /**
@@ -460,6 +463,32 @@ void drawWall() {
     glEnd();
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    CVector4 lightPos(0., 0., 15.0f, 1.0f);
+    CVector4 planeNormal(0.0f, 0.0f, +1.0f, 0.0f);
+
+    CMatrix4x4 ShadowMatrix;
+    ShadowMatrix.CreateShadowMatrix(planeNormal, lightPos);
+
+    // Теперь рисуем тень...
+    glDisable(GL_DEPTH_TEST);
+    glPushMatrix();
+    {
+        // Одно то, что мы создали матрицу тени, ещё ничего не значит. Теперь нужно
+        // умножить её на текущую матрицу:
+
+        glTranslatef(0., 0., +1.);
+        glMultMatrixf(ShadowMatrix.matrix);
+        glColor4f(1.f, 1.f, 1.f, 0.5f);
+
+        // Нарисуем куб как обычно. Новая матрица сделает его плоским.
+        drawCube();
+        drawPyramid();
+        drawMesh(teapot);
+    }
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+
     glPopMatrix();
 }
 
