@@ -14,26 +14,21 @@ struct Vector3 {
 
 public:
     Vector3 cross_multiply(Vector3 that);
-};
 
-struct Point3 {
-    double x = 0.;
-    double y = 0.;
-    double z = 0.;
+    Vector3 operator-(Vector3 that);
 
-public:
-    Vector3 operator-(Point3 that);
+    Vector3 operator*(double that);
 
-    bool operator==(const Point3 &rhs) const;
+    bool operator==(const Vector3 &rhs) const;
 
-    bool operator!=(const Point3 &rhs) const;
+    bool operator!=(const Vector3 &rhs) const;
 };
 
 struct Segment3 {
-    Point3 pointA;
-    Point3 pointB;
+    Vector3 pointA;
+    Vector3 pointB;
 
-    Segment3(const Point3 &pointA, const Point3 &pointB);
+    Segment3(const Vector3 &pointA, const Vector3 &pointB);
 
 public:
     bool isEquivalentTo(Segment3 &that);
@@ -46,14 +41,14 @@ struct PlaneEquation {
     double d = 0.;
 };
 
-static const Point3 DEFAULT_TEXTURE_VERTEX = {0., 0., 0.};
+static const Vector3 DEFAULT_TEXTURE_VERTEX = {0., 0., 0.};
 static const Vector3 DEFAULT_NORMAL_VECTOR = {0., 0., 1.};
 
 class FaceVertex {
 public:
-    Point3 position;
+    Vector3 position;
     Vector3 normal = DEFAULT_NORMAL_VECTOR;
-    Point3 texture = DEFAULT_TEXTURE_VERTEX;
+    Vector3 texture = DEFAULT_TEXTURE_VERTEX;
 };
 
 class Face {

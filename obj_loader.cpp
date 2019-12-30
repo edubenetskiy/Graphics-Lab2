@@ -51,8 +51,8 @@ namespace obj_loader {
     Mesh load_obj(const char *path) {
         cout << "Loading OBJ file..." << endl;
 
-        std::vector<Point3> vertices;
-        std::vector<Point3> textureVertices;
+        std::vector<Vector3> vertices;
+        std::vector<Vector3> textureVertices;
         std::vector<Vector3> normals;
 
         ifstream file;
@@ -74,7 +74,7 @@ namespace obj_loader {
 
             } else if (op == "v") {
                 // Vertex
-                Point3 point;
+                Vector3 point;
                 line >> point.x >> point.y >> point.z;
                 vertices.push_back(point);
 
@@ -85,7 +85,7 @@ namespace obj_loader {
                 normals.push_back(normal);
 
             } else if (op == "vt") {
-                Point3 point;
+                Vector3 point;
                 line >> point.x >> point.y >> point.z;
                 textureVertices.push_back(point);
 
@@ -145,7 +145,7 @@ Vector3 Vector3::cross_multiply(Vector3 that) {
     };
 }
 
-Vector3 Point3::operator-(Point3 that) {
+Vector3 Vector3::operator-(Vector3 that) {
     return Vector3{
             .x = this->x - that.x,
             .y = this->y - that.y,
@@ -153,19 +153,19 @@ Vector3 Point3::operator-(Point3 that) {
     };
 }
 
-bool Point3::operator==(const Point3 &rhs) const {
+bool Vector3::operator==(const Vector3 &rhs) const {
     return x == rhs.x &&
            y == rhs.y &&
            z == rhs.z;
 }
 
-bool Point3::operator!=(const Point3 &rhs) const {
+bool Vector3::operator!=(const Vector3 &rhs) const {
     return !(rhs == *this);
 }
 
 PlaneEquation Face::calculatePlaneEquation() {
     PlaneEquation equation = {};
-    Point3 v[4];
+    Vector3 v[4];
     int i;
 
     for (i = 0; i < 3; i++) {
@@ -185,7 +185,7 @@ PlaneEquation Face::calculatePlaneEquation() {
     return equation;
 }
 
-Segment3::Segment3(const Point3 &pointA, const Point3 &pointB) : pointA(pointA), pointB(pointB) {}
+Segment3::Segment3(const Vector3 &pointA, const Vector3 &pointB) : pointA(pointA), pointB(pointB) {}
 
 bool Segment3::isEquivalentTo(Segment3 &that) {
     return (this->pointA == that.pointA && this->pointB == that.pointB) ||
