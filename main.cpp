@@ -146,6 +146,12 @@ void mainLoop() {
                 camY = 0;
                 cameraRadius = 15.;
                 break;
+            case 'w':
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                break;
+            case 'v':
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                break;
             default:
                 if (key == '~') lightState = LightType::SUPPORT_DISABLED;
                 else if (key == '0') lightState = LightType::NO_LIGHT_SOURCES;
