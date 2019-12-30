@@ -2,9 +2,9 @@
 #include "obj_loader.h"
 #include <GL/gl.h>
 #include <cstdlib>
+#include <GL/glu.h>
 #include "ShadowCast.h"
 
-// TODO: need to calculate neighbors
 void castShadow(Mesh &mesh, double const *lightPosition) {
     Vector3 position = {.x=lightPosition[0], .y=lightPosition[1], .z=lightPosition[2]};
     castShadow(mesh, position);
@@ -21,14 +21,14 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
     }
 
     //set visual parameter
-    for (faceIndex = 0; faceIndex < mesh.faces.size(); faceIndex++) {
-        PlaneEquation planeEquation = mesh.faces[faceIndex].calculatePlaneEquation();
+    for (Face &face : mesh.faces) {
+        PlaneEquation planeEquation = face.calculatePlaneEquation();
         // check to see if light is in front or behind the plane (face plane)
-        double side = planeEquation.a * lightPosition[0] +
-                      planeEquation.b * lightPosition[1] +
-                      planeEquation.c * lightPosition[2] +
-                      planeEquation.d * lightPosition[3];
-        mesh.faces[faceIndex].visible = side > 0;
+        double side = planeEquation.a * lightPosition.x +
+                      planeEquation.b * lightPosition.y +
+                      planeEquation.c * lightPosition.z +
+                      planeEquation.d; // TODO: Should be multiplied by lightPosition.w, which is normally 1.0
+        face.visible = side > 0;
     }
 
     glDisable(GL_LIGHTING);
@@ -42,25 +42,19 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
     // First pass, stencil operation decreases stencil value
     glFrontFace(GL_CCW);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-    for (faceIndex = 0; faceIndex < mesh.faces.size(); faceIndex++) {
-        Face face = mesh.faces[faceIndex];
+    for (Face &face : mesh.faces) {
         if (face.visible) {
-            for (vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
-                neighborIndex = face.neigh[vertexIndex];
-                if (!(neighborIndex != 0 && mesh.faces[neighborIndex - 1].visible)) {
+            for (size_t vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
+                size_t neighborIndex = face.neigh[vertexIndex];
+                if (!neighborIndex || !(mesh.faces[neighborIndex - 1].visible)) {
                     // here we have an edge, we must draw a polygon
-                    faceVertex1 = face.vertices[vertexIndex];
-                    nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
-                    faceVertex2 = face.vertices[nextVertexIndex];
+                    FaceVertex faceVertex1 = face.vertices[vertexIndex];
+                    size_t nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
+                    FaceVertex faceVertex2 = face.vertices[nextVertexIndex];
 
                     //calculate the length of the vector
-                    v1.x = (faceVertex1.position.x - lightPosition[0]) * SHADOW_INFINITY;
-                    v1.y = (faceVertex1.position.y - lightPosition[1]) * SHADOW_INFINITY;
-                    v1.z = (faceVertex1.position.z - lightPosition[2]) * SHADOW_INFINITY;
-
-                    v2.x = (faceVertex2.position.x - lightPosition[0]) * SHADOW_INFINITY;
-                    v2.y = (faceVertex2.position.y - lightPosition[1]) * SHADOW_INFINITY;
-                    v2.z = (faceVertex2.position.z - lightPosition[2]) * SHADOW_INFINITY;
+                    Vector3 v1 = (faceVertex1.position - lightPosition) * SHADOW_INFINITY;
+                    Vector3 v2 = (faceVertex2.position - lightPosition) * SHADOW_INFINITY;
 
                     //draw the polygon
                     glBegin(GL_TRIANGLE_STRIP);
@@ -86,26 +80,19 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
     // Second pass, stencil operation increases stencil value
     glFrontFace(GL_CW);
     glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-    for (faceIndex = 0; faceIndex < mesh.faces.size(); faceIndex++) {
-        Face face = mesh.faces[faceIndex];
-
-        if (mesh.faces[faceIndex].visible)
-            for (vertexIndex = 0; vertexIndex < mesh.faces[faceIndex].vertices.size(); vertexIndex++) {
-                neighborIndex = face.neigh[vertexIndex];
-                if ((!neighborIndex) || (!mesh.faces[neighborIndex - 1].visible)) {
+    for (Face &face: mesh.faces) {
+        if (face.visible) {
+            for (size_t vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
+                size_t neighborIndex = face.neigh[vertexIndex];
+                if (!neighborIndex || !(mesh.faces[neighborIndex - 1].visible)) {
                     // here we have an edge, we must draw a polygon
-                    faceVertex1 = face.vertices[vertexIndex];
-                    nextVertexIndex = (vertexIndex + 1) % mesh.faces[faceIndex].vertices.size();
-                    faceVertex2 = face.vertices[nextVertexIndex];
+                    FaceVertex faceVertex1 = face.vertices[vertexIndex];
+                    size_t nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
+                    FaceVertex faceVertex2 = face.vertices[nextVertexIndex];
 
                     //calculate the length of the vector
-                    v1.x = (faceVertex1.position.x - lightPosition[0]) * SHADOW_INFINITY;
-                    v1.y = (faceVertex1.position.y - lightPosition[1]) * SHADOW_INFINITY;
-                    v1.z = (faceVertex1.position.z - lightPosition[2]) * SHADOW_INFINITY;
-
-                    v2.x = (faceVertex2.position.x - lightPosition[0]) * SHADOW_INFINITY;
-                    v2.y = (faceVertex2.position.y - lightPosition[1]) * SHADOW_INFINITY;
-                    v2.z = (faceVertex2.position.z - lightPosition[2]) * SHADOW_INFINITY;
+                    Vector3 v1 = (faceVertex1.position - lightPosition) * SHADOW_INFINITY;
+                    Vector3 v2 = (faceVertex2.position - lightPosition) * SHADOW_INFINITY;
 
                     //draw the polygon
                     glBegin(GL_TRIANGLE_STRIP);
@@ -125,13 +112,14 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
                     glEnd();
                 }
             }
+        }
     }
 
     glFrontFace(GL_CCW);
     glColorMask(1, 1, 1, 1);
 
     // draw a shadowing rectangle covering the entire screen
-    glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
+    glColor4f(0.f, 0.f, 0.f, 0.5f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glStencilFunc(GL_NOTEQUAL, 0, 0xffffffff);
