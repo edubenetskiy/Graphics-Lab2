@@ -5,6 +5,8 @@
 #include <GL/glu.h>
 #include "ShadowCast.h"
 
+void shadowPass(const Mesh &mesh, const Vector3 &lightPosition);
+
 void castShadow(Mesh &mesh, double const *lightPosition) {
     Vector3 position = {.x=lightPosition[0], .y=lightPosition[1], .z=lightPosition[2]};
     castShadow(mesh, position);
@@ -42,78 +44,12 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
     // First pass, stencil operation decreases stencil value
     glFrontFace(GL_CCW);
     glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-    for (Face &face : mesh.faces) {
-        if (face.visible) {
-            for (size_t vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
-                size_t neighborIndex = face.neigh[vertexIndex];
-                if (!neighborIndex || !(mesh.faces[neighborIndex - 1].visible)) {
-                    // here we have an edge, we must draw a polygon
-                    FaceVertex faceVertex1 = face.vertices[vertexIndex];
-                    size_t nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
-                    FaceVertex faceVertex2 = face.vertices[nextVertexIndex];
-
-                    //calculate the length of the vector
-                    Vector3 v1 = (faceVertex1.position - lightPosition) * SHADOW_INFINITY;
-                    Vector3 v2 = (faceVertex2.position - lightPosition) * SHADOW_INFINITY;
-
-                    //draw the polygon
-                    glBegin(GL_TRIANGLE_STRIP);
-                    glVertex3f(faceVertex1.position.x,
-                               faceVertex1.position.y,
-                               faceVertex1.position.z);
-                    glVertex3f(faceVertex1.position.x + v1.x,
-                               faceVertex1.position.y + v1.y,
-                               faceVertex1.position.z + v1.z);
-
-                    glVertex3f(faceVertex2.position.x,
-                               faceVertex2.position.y,
-                               faceVertex2.position.z);
-                    glVertex3f(faceVertex2.position.x + v2.x,
-                               faceVertex2.position.y + v2.y,
-                               faceVertex2.position.z + v2.z);
-                    glEnd();
-                }
-            }
-        }
-    }
+    shadowPass(mesh, lightPosition);
 
     // Second pass, stencil operation increases stencil value
     glFrontFace(GL_CW);
     glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-    for (Face &face: mesh.faces) {
-        if (face.visible) {
-            for (size_t vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
-                size_t neighborIndex = face.neigh[vertexIndex];
-                if (!neighborIndex || !(mesh.faces[neighborIndex - 1].visible)) {
-                    // here we have an edge, we must draw a polygon
-                    FaceVertex faceVertex1 = face.vertices[vertexIndex];
-                    size_t nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
-                    FaceVertex faceVertex2 = face.vertices[nextVertexIndex];
-
-                    //calculate the length of the vector
-                    Vector3 v1 = (faceVertex1.position - lightPosition) * SHADOW_INFINITY;
-                    Vector3 v2 = (faceVertex2.position - lightPosition) * SHADOW_INFINITY;
-
-                    //draw the polygon
-                    glBegin(GL_TRIANGLE_STRIP);
-                    glVertex3f(faceVertex1.position.x,
-                               faceVertex1.position.y,
-                               faceVertex1.position.z);
-                    glVertex3f(faceVertex1.position.x + v1.x,
-                               faceVertex1.position.y + v1.y,
-                               faceVertex1.position.z + v1.z);
-
-                    glVertex3f(faceVertex2.position.x,
-                               faceVertex2.position.y,
-                               faceVertex2.position.z);
-                    glVertex3f(faceVertex2.position.x + v2.x,
-                               faceVertex2.position.y + v2.y,
-                               faceVertex2.position.z + v2.z);
-                    glEnd();
-                }
-            }
-        }
-    }
+    shadowPass(mesh, lightPosition);
 
     glFrontFace(GL_CCW);
     glColorMask(1, 1, 1, 1);
@@ -140,6 +76,43 @@ void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
     glEnable(GL_LIGHTING);
     glDisable(GL_STENCIL_TEST);
     glShadeModel(GL_SMOOTH);
+}
+
+void shadowPass(const Mesh &mesh, const Vector3 &lightPosition) {
+    for (const Face &face : mesh.faces) {
+        if (face.visible) {
+            for (size_t vertexIndex = 0; vertexIndex < face.vertices.size(); vertexIndex++) {
+                size_t neighborIndex = face.neigh[vertexIndex];
+                if (!neighborIndex || !(mesh.faces[neighborIndex - 1].visible)) {
+                    // here we have an edge, we must draw a polygon
+                    FaceVertex faceVertex1 = face.vertices[vertexIndex];
+                    size_t nextVertexIndex = (vertexIndex + 1) % face.vertices.size();
+                    FaceVertex faceVertex2 = face.vertices[nextVertexIndex];
+
+                    //calculate the length of the vector
+                    Vector3 v1 = (faceVertex1.position - lightPosition) * SHADOW_INFINITY;
+                    Vector3 v2 = (faceVertex2.position - lightPosition) * SHADOW_INFINITY;
+
+                    //draw the polygon
+                    glBegin(GL_TRIANGLE_STRIP);
+                    glVertex3f(faceVertex1.position.x,
+                               faceVertex1.position.y,
+                               faceVertex1.position.z);
+                    glVertex3f(faceVertex1.position.x + v1.x,
+                               faceVertex1.position.y + v1.y,
+                               faceVertex1.position.z + v1.z);
+
+                    glVertex3f(faceVertex2.position.x,
+                               faceVertex2.position.y,
+                               faceVertex2.position.z);
+                    glVertex3f(faceVertex2.position.x + v2.x,
+                               faceVertex2.position.y + v2.y,
+                               faceVertex2.position.z + v2.z);
+                    glEnd();
+                }
+            }
+        }
+    }
 }
 
 void calculateFaceAdjacency(Mesh &mesh) {
