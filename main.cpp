@@ -61,7 +61,7 @@ void init() {
 
     load_texture("textures/wall.jpg", &texture_wall);
     load_texture("textures/wood.png", &texture_wood);
-    teapot = obj_loader::load_obj("meshes/heart.obj");
+    teapot = obj_loader::load_obj("meshes/heart.obj", 50.);
     calculateFaceAdjacency(teapot);
 
     glCullFace(GL_BACK);
@@ -274,7 +274,6 @@ GLfloat COLOR_GREEN[3] = {.0, .59, .54};
 GLfloat COLOR_BLUE[3] = {.02, .67, .96};
 
 void drawMesh(Mesh &mesh) {
-    double meshScale = 5.;
     glColor3fv(COLOR_RED);
 
     glBindTexture(GL_TEXTURE_2D, texture_wood);
@@ -284,9 +283,9 @@ void drawMesh(Mesh &mesh) {
         for (FaceVertex vertex : face.vertices) {
             glTexCoord3d(vertex.texture.x, vertex.texture.y, vertex.texture.z);
             glNormal3d(vertex.normal.x, vertex.normal.y, vertex.normal.z);
-            glVertex3d(vertex.position.x / meshScale,
-                       vertex.position.y / meshScale,
-                       vertex.position.z / meshScale);
+            glVertex3d(vertex.position.x,
+                       vertex.position.y,
+                       vertex.position.z);
         }
         glEnd();
     }

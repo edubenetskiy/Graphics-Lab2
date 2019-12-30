@@ -66,7 +66,7 @@ public:
 };
 
 namespace obj_loader {
-    Mesh load_obj(const char *path);
+    Mesh load_obj(const char *path, double scale);
 }
 
 #endif //GRAPHICS_LAB2_OBJ_LOADER_H

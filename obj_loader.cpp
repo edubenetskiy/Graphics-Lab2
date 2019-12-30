@@ -48,7 +48,7 @@ namespace obj_loader {
         return result;
     }
 
-    Mesh load_obj(const char *path) {
+    Mesh load_obj(const char *path, double scale) {
         cout << "Loading OBJ file..." << endl;
 
         std::vector<Vector3> vertices;
@@ -97,7 +97,7 @@ namespace obj_loader {
                 while (line >> vertexDefinition) {
                     FaceVertex faceVertex;
                     FaceVertexDefinition faceVertexDefinition = parseVertexDefinition(vertexDefinition);
-                    faceVertex.position = vertices[faceVertexDefinition.vertexOrdinal - 1];
+                    faceVertex.position = vertices[faceVertexDefinition.vertexOrdinal - 1] * (1 / scale);
 
                     if (faceVertexDefinition.textureVertexOrdinal != 0) {
                         faceVertex.texture = textureVertices[faceVertexDefinition.textureVertexOrdinal - 1];
@@ -161,6 +161,14 @@ bool Vector3::operator==(const Vector3 &rhs) const {
 
 bool Vector3::operator!=(const Vector3 &rhs) const {
     return !(rhs == *this);
+}
+
+Vector3 Vector3::operator*(double factor) {
+    return Vector3{
+            .x=this->x * factor,
+            .y=this->y * factor,
+            .z=this->z * factor,
+    };
 }
 
 PlaneEquation Face::calculatePlaneEquation() {
