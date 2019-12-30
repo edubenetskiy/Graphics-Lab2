@@ -143,6 +143,7 @@ void mainLoop() {
             case 'r':
                 cameraAngleX = 0.;
                 cameraAngleY = 0.;
+                camY = 0;
                 cameraRadius = 15.;
                 break;
             default:
