@@ -11,6 +11,7 @@
 
 GLuint texture_wall;
 GLuint texture_wood;
+GLuint texture_dog;
 
 std::queue<char> keys = std::queue<char>();
 
@@ -61,7 +62,9 @@ void init() {
 
     load_texture("textures/wall.jpg", &texture_wall);
     load_texture("textures/wood.png", &texture_wood);
-    teapot = obj_loader::load_obj("meshes/heart.obj", 50.);
+    load_texture("textures/dog.jpg", &texture_dog);
+
+    teapot = obj_loader::load_obj("meshes/dog.obj", 50.);
     calculateFaceAdjacency(teapot);
 
     glCullFace(GL_BACK);
@@ -276,7 +279,7 @@ GLfloat COLOR_BLUE[3] = {.02, .67, .96};
 void drawMesh(Mesh &mesh) {
     glColor3fv(COLOR_RED);
 
-    glBindTexture(GL_TEXTURE_2D, texture_wood);
+    glBindTexture(GL_TEXTURE_2D, texture_dog);
 
     for (Face const &face: teapot.faces) {
         glBegin(GL_POLYGON);
