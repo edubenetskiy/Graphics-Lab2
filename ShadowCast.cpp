@@ -6,10 +6,19 @@
 
 // TODO: need to calculate neighbors
 void castShadow(Mesh &mesh, double const *lightPosition) {
-    unsigned int faceIndex, vertexIndex, neighborIndex, nextVertexIndex;
-    FaceVertex faceVertex2;
-    FaceVertex faceVertex1;
-    Point3 v1, v2;
+    Vector3 position = {.x=lightPosition[0], .y=lightPosition[1], .z=lightPosition[2]};
+    castShadow(mesh, position);
+}
+
+void castShadow(Mesh &mesh, const Vector3 &lightPosition) {
+    {
+        // Draw light source as a sphere
+        GLUquadric *quadric = gluNewQuadric();
+        glPushMatrix();
+        glTranslated(lightPosition.x, lightPosition.y, lightPosition.z);
+        gluSphere(quadric, .25, 20, 20);
+        glPopMatrix();
+    }
 
     //set visual parameter
     for (faceIndex = 0; faceIndex < mesh.faces.size(); faceIndex++) {
