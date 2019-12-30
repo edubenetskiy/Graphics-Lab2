@@ -275,9 +275,10 @@ void printMatrix4x4(const double *modelViewMatrix) {
 GLfloat COLOR_RED[3] = {.67, .18, .15};
 GLfloat COLOR_GREEN[3] = {.0, .59, .54};
 GLfloat COLOR_BLUE[3] = {.02, .67, .96};
+GLfloat COLOR_WHITE[3] = {1.0, 1.0, 1.0};
 
 void drawMesh(Mesh &mesh) {
-    glColor3fv(COLOR_RED);
+    glColor3fv(COLOR_WHITE);
 
     glBindTexture(GL_TEXTURE_2D, texture_dog);
 
