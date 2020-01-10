@@ -169,13 +169,26 @@ void mainLoop() {
     GLfloat material_diffuse[] = {1.0, 1.0, 1.0, 1.0};
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_diffuse);
 
+    glLoadIdentity();
+
+    glRotated(+90, 1., 0., 0.);
+    glRotated(+5, 1., 1., 1.);
+
     double modelViewMatrix[16];
-    double invertedModelViewMatrix[16];
     glGetDoublev(GL_MODELVIEW_MATRIX, modelViewMatrix);
-    gluInvertMatrix(modelViewMatrix, invertedModelViewMatrix);
-//        printMatrix4x4(modelViewMatrix);
-    GLdouble lightPosition[] = {+0.0, 0.0, +15.0, 1.0};
-    multiplyMatVec(invertedModelViewMatrix, lightPosition);
+
+    GLdouble lightPosition[] = {0, 0.0, +10.0, 1.0};
+    multiplyMatVec(modelViewMatrix, lightPosition); // -> rotatedLightPosition
+
+    glTranslated(0., 0, -5.);
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelViewMatrix);
+
+    GLdouble worldCenter[] = {0, 0, 0, 1};
+    multiplyMatVec(modelViewMatrix, worldCenter);
+
+    for (int i = 0; i < 3; ++i) {
+        lightPosition[i] += worldCenter[i];
+    }
 
     glLoadIdentity();
     placeAndRotateCamera();
@@ -242,7 +255,7 @@ void mainLoop() {
 
     glPushMatrix();
     {
-        glTranslated(0., -2.5, +5.);
+        glTranslated(0., 0, +5.);
         glRotated(-5, 1., 1., 1.);
         glRotated(-90, 1., 0., 0.);
 
